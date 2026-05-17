@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImunoWay — Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#C4522A;--navy:#2C1810;--bg:#FBF6F3;--accent:#E8967A;
+  --text:#1a1a1a;--muted:#888;--border:#e8e0da;--surface:#fff;
+  --radius:12px;--shadow:0 4px 24px rgba(0,0,0,.08);
+}
+body{
+  font-family:'Inter',sans-serif;background:var(--bg);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+}
+.login-wrap{
+  width:100%;max-width:420px;padding:20px;
+}
+.logo-area{text-align:center;margin-bottom:32px}
+.logo-area .hex{
+  width:56px;height:56px;background:var(--navy);border-radius:14px;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 14px;
+}
+.logo-area h1{
+  font-family:'Cormorant Garamond',serif;font-size:32px;font-style:italic;
+  color:var(--navy);letter-spacing:-.5px;
+}
+.logo-area h1 span{color:var(--brand)}
+.logo-area p{font-size:12px;color:var(--muted);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase}
+.card{
+  background:var(--surface);border-radius:20px;padding:32px;
+  box-shadow:var(--shadow);border:1px solid var(--border);
+}
+.card h2{font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px}
+.card p{font-size:13px;color:var(--muted);margin-bottom:24px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;letter-spacing:.3px}
+.field input{
+  width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;
+  font-size:14px;font-family:'Inter',sans-serif;color:var(--text);
+  background:#fafafa;transition:border-color .2s;outline:none;
+}
+.field input:focus{border-color:var(--brand);background:#fff}
+.btn{
+  width:100%;padding:13px;border-radius:10px;border:none;
+  background:var(--brand);color:#fff;font-size:14px;font-weight:700;
+  font-family:'Inter',sans-serif;cursor:pointer;transition:opacity .2s;
+  margin-top:4px;
+}
+.btn:hover{opacity:.9}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.error{
+  background:#FCEBEB;border:1px solid #f5c6c6;border-radius:8px;
+  padding:10px 14px;font-size:12.5px;color:#A32D2D;margin-bottom:16px;
+  display:none;
+}
+.footer{text-align:center;margin-top:20px;font-size:11px;color:var(--muted)}
+.loading{display:none;text-align:center;padding:10px 0;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="logo-area">
+    <div class="hex">
+      <svg width="28" height="28" viewBox="-46 -46 92 92" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="0,-40 34.6,-20 34.6,20 0,40 -34.6,20 -34.6,-20" fill="none" stroke="#E8967A" stroke-width="5"/>
+        <line x1="0" y1="-28" x2="0" y2="28" stroke="#E8967A" stroke-width="3"/>
+        <line x1="-14" y1="0" x2="14" y2="0" stroke="#E8967A" stroke-width="3"/>
+      </svg>
+    </div>
+    <h1>Imuno<span>.</span>Way</h1>
+    <p>Plataforma de Imunobiológicos</p>
+  </div>
+
+  <div class="card">
+    <h2>Acesso ao sistema</h2>
+    <p>Entre com seu email e senha cadastrados</p>
+    <div class="error" id="login-error"></div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="inp-email" placeholder="seu@email.com.br" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="inp-senha" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="loading" id="loading-msg">Verificando acesso...</div>
+    <button class="btn" id="btn-login" onclick="doLogin()">Entrar</button>
+  </div>
+
+  <div class="footer">ImunoWay © 2025 · Todos os direitos reservados</div>
+</div>
+
+<script>
+const SUPA_URL = 'https://nekqsuvjzwzprcsozwnr.supabase.co';
+const SUPA_KEY = 'sb_publishable_cItO3Ib9OUn1SibZYsykgA_4RiXOLB8';
+
+// Check if already logged in
+try {
+  var session = JSON.parse(localStorage.getItem('iw_session'));
+  if(session && session.medico_id && session.expires > Date.now()) {
+    window.location.href = 'app.html';
+  }
+} catch(e){}
+
+// Enter key support
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Enter') doLogin();
+});
+
+async function doLogin(){
+  var email = document.getElementById('inp-email').value.trim();
+  var senha = document.getElementById('inp-senha').value.trim();
+  var errEl = document.getElementById('login-error');
+  var btn   = document.getElementById('btn-login');
+  var load  = document.getElementById('loading-msg');
+
+  errEl.style.display = 'none';
+
+  if(!email || !senha){
+    errEl.textContent = 'Preencha email e senha.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  load.style.display = 'block';
+
+  try {
+    // Query medicos table - find by email and pin (senha = pin)
+    var res = await fetch(SUPA_URL + '/rest/v1/medicos?email=eq.' + encodeURIComponent(email) + '&ativo=eq.true&select=*', {
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    var data = await res.json();
+
+    if(!data || data.length === 0){
+      throw new Error('Email não encontrado ou acesso inativo.');
+    }
+
+    var medico = data[0];
+
+    // Verify PIN/password
+    if(medico.pin !== senha){
+      throw new Error('Senha incorreta. Tente novamente.');
+    }
+
+    // Save session (24h)
+    var session = {
+      medico_id:    medico.id,
+      nome:         medico.nome,
+      especialidade:medico.especialidade,
+      email:        medico.email,
+      cor_brand:    medico.cor_brand || '#C4522A',
+      cor_navy:     medico.cor_navy  || '#2C1810',
+      cor_accent:   medico.cor_accent|| '#E8967A',
+      cor_bg:       medico.cor_bg    || '#FBF6F3',
+      is_admin:     medico.is_admin  || false,
+      expires:      Date.now() + (24 * 60 * 60 * 1000)
+    };
+    localStorage.setItem('iw_session', JSON.stringify(session));
+
+    // Redirect
+    if(medico.is_admin){
+      window.location.href = 'admin.html';
+    } else {
+      window.location.href = 'app.html';
+    }
+
+  } catch(e){
+    errEl.textContent = e.message || 'Erro ao conectar. Tente novamente.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    load.style.display = 'none';
+  }
+}
+</script>
+</body>
+</html>
