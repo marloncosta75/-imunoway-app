@@ -132,24 +132,35 @@ async function doLogin(){
 
   try {
     // Query medicos table - find by email and pin (senha = pin)
-    var res = await fetch(SUPA_URL + '/rest/v1/medicos?email=eq.' + encodeURIComponent(email) + '&ativo=eq.true&select=*', {
+    var res = await fetch(SUPA_URL + '/rest/v1/medicos?email=eq.' + encodeURIComponent(email) + '&select=*', {
       headers: {
         'apikey': SUPA_KEY,
         'Authorization': 'Bearer ' + SUPA_KEY,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
     });
 
-    var data = await res.json();
+    if(!res.ok){
+      var errText = await res.text();
+      throw new Error('Erro no servidor: ' + errText);
+    }
 
-    if(!data || data.length === 0){
-      throw new Error('Email não encontrado ou acesso inativo.');
+    var data = await res.json();
+    console.log('Supabase response:', data);
+
+    if(!data || !Array.isArray(data) || data.length === 0){
+      throw new Error('Email não encontrado. Verifique e tente novamente.');
     }
 
     var medico = data[0];
 
+    if(!medico.ativo){
+      throw new Error('Acesso inativo. Entre em contato com o administrador.');
+    }
+
     // Verify PIN/password
-    if(medico.pin !== senha){
+    if(String(medico.pin) !== String(senha)){
       throw new Error('Senha incorreta. Tente novamente.');
     }
 
